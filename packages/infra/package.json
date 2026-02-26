@@ -1,0 +1,22 @@
+{
+  "name": "@saas-starter/infra",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "tsc",
+    "deploy": "cdk deploy",
+    "diff": "cdk diff",
+    "synth": "cdk synth",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Aidan Lowson <dev@aidanlowson.com>",
+  "description": "",
+  "dependencies": {
+    "aws-cdk-lib": "^2.240.0",
+    "constructs": "^10.5.1",
+    "@saas-starter/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.1108.0"
+  }
+}

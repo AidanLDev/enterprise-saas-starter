@@ -1,0 +1,14 @@
+{
+  "name": "@saas-starter/api",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@saas-starter/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.161"
+  }
+}
