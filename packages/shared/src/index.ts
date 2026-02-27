@@ -1,1 +1,1 @@
-export * from "./interfaces/interfaces.types";
+export * from './interfaces/interfaces.types';

@@ -7,6 +7,6 @@ export interface ApiResponse<T> {
 export interface User {
   id: string;
   email: string;
-  role: "admin" | "user";
+  role: 'admin' | 'user';
   createdAt: string;
 }

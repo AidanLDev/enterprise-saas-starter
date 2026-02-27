@@ -1,11 +1,10 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { ApiResponse } from "@saas-starter/shared";
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { ApiResponse } from '@saas-starter/shared';
 
-export const handler = async (
-  event: APIGatewayProxyEvent,
-): Promise<APIGatewayProxyResult> => {
+export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+  console.log('Received event:', JSON.stringify(event, null, 2));
   const response: ApiResponse<string> = {
-    data: "API is running",
+    data: 'API is running',
     statusCode: 200,
   };
 
