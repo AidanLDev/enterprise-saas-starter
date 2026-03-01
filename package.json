@@ -21,6 +21,11 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
   "lint-staged": {
     "**/*.{ts,tsx}": [
       "eslint --fix",

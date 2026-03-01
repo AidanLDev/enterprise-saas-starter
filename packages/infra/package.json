@@ -17,6 +17,7 @@
     "@saas-starter/shared": "workspace:*"
   },
   "devDependencies": {
-    "aws-cdk": "^2.1108.0"
+    "aws-cdk": "^2.1108.0",
+    "esbuild": "^0.24.0"
   }
 }
