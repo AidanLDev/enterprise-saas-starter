@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "deploy": "cdk deploy",
+    "deploy": "cdk deploy --outputs-file cdk-outputs.json",
     "diff": "cdk diff",
     "synth": "cdk synth",
     "test": "echo \"Error: no test specified\" && exit 1"

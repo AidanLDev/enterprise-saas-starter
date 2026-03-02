@@ -4,15 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && open-next build",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@saas-starter/shared": "workspace:*",
+    "amazon-cognito-identity-js": "^6.3.16",
     "next": "16.1.6",
     "react": "19.2.3",
-    "react-dom": "19.2.3",
-    "@saas-starter/shared": "workspace:*"
+    "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -20,7 +21,6 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "@opennextjs/aws": "^3.9.0",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4"
   }
