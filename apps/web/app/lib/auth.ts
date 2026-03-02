@@ -77,6 +77,20 @@ export function getCurrentSession(): Promise<CognitoUserSession | null> {
   });
 }
 
+export function resendConfirmationCode(email: string): Promise<void> {
+  const user = new CognitoUser({ Username: email, Pool: userPool });
+
+  return new Promise((resolve, reject) => {
+    user.resendConfirmationCode((err) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
 export function getIdToken(): Promise<string | null> {
   return getCurrentSession().then((session) =>
     session ? session.getIdToken().getJwtToken() : null

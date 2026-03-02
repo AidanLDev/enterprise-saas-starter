@@ -1,11 +1,13 @@
 'use client';
 
-import { FormEvent, Suspense, useState } from 'react';
+import { SubmitEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../components/auth-provider';
 
+const RESEND_COOLDOWN = 30;
+
 function ConfirmForm() {
-  const { confirmSignUp } = useAuth();
+  const { confirmSignUp, signIn, resendConfirmationCode } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailParam = searchParams.get('email') ?? '';
@@ -14,14 +16,61 @@ function ConfirmForm() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [countdown, setCountdown] = useState(RESEND_COOLDOWN);
+  const [resending, setResending] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function handleSubmit(e: FormEvent) {
+  const startCountdown = useCallback(() => {
+    setCountdown(RESEND_COOLDOWN);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          timerRef.current = null;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    startCountdown();
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [startCountdown]);
+
+  async function handleResend() {
+    if (!email) return;
+    setResending(true);
+    setError('');
+    try {
+      await resendConfirmationCode(email);
+      startCountdown();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to resend code');
+    } finally {
+      setResending(false);
+    }
+  }
+
+  async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
     setError('');
     setSubmitting(true);
     try {
       await confirmSignUp(email, code);
-      router.push('/login');
+
+      const pendingPassword = sessionStorage.getItem('pendingPassword');
+      if (pendingPassword) {
+        sessionStorage.removeItem('pendingPassword');
+        await signIn(email, pendingPassword);
+        router.push('/dashboard');
+      } else {
+        router.push('/login');
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Confirmation failed');
     } finally {
@@ -69,6 +118,7 @@ function ConfirmForm() {
         />
       </label>
 
+      {/* TODO: Create button component */}
       <button
         type="submit"
         disabled={submitting}
@@ -76,6 +126,22 @@ function ConfirmForm() {
       >
         {submitting ? 'Confirming…' : 'Confirm'}
       </button>
+
+      {/* TODO: Create Typeography components */}
+      <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
+        {countdown > 0 ? (
+          <>Resend code in {countdown}s</>
+        ) : (
+          <button
+            type="button"
+            disabled={resending}
+            onClick={handleResend}
+            className="font-medium text-zinc-900 hover:underline disabled:opacity-50 dark:text-zinc-50 cursor-pointer dark:hover:text-zinc-200"
+          >
+            {resending ? 'Resending…' : 'Resend code'}
+          </button>
+        )}
+      </p>
     </form>
   );
 }
