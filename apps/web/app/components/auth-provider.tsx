@@ -13,6 +13,7 @@ interface AuthContextValue {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   confirmSignUp: (email: string, code: string) => Promise<void>;
+  resendConfirmationCode: (email: string) => Promise<void>;
   signOut: () => void;
   getIdToken: () => Promise<string | null>;
 }
@@ -52,6 +53,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await auth.confirmSignUp(email, code);
   }, []);
 
+  const handleResendConfirmationCode = useCallback(async (email: string) => {
+    await auth.resendConfirmationCode(email);
+  }, []);
+
   const handleSignOut = useCallback(() => {
     auth.signOut();
     setUser(null);
@@ -65,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signIn: handleSignIn,
         signUp: handleSignUp,
         confirmSignUp: handleConfirmSignUp,
+        resendConfirmationCode: handleResendConfirmationCode,
         signOut: handleSignOut,
         getIdToken: auth.getIdToken,
       }}
