@@ -26,20 +26,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    auth
+  const refreshSession = useCallback(() => {
+    return auth
       .getCurrentSession()
       .then((session) => {
         if (session) {
           const payload = session.getIdToken().decodePayload();
           setUser({ email: payload.email });
+        } else {
+          setUser(null);
         }
       })
       .catch(() => {
-        // No valid session — that's fine
-      })
-      .finally(() => setLoading(false));
+        setUser(null);
+      });
   }, []);
+
+  useEffect(() => {
+    refreshSession().finally(() => setLoading(false));
+  }, [refreshSession]);
+
+  // Proactively refresh tokens every 45 minutes (tokens expire after 60 min)
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(
+      () => {
+        refreshSession();
+      },
+      45 * 60 * 1000
+    );
+    return () => clearInterval(interval);
+  }, [user, refreshSession]);
 
   const handleSignIn = useCallback(async (email: string, password: string) => {
     const session = await auth.signIn(email, password);
