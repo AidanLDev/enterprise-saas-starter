@@ -6,6 +6,7 @@ import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations
 import { HttpJwtAuthorizer } from 'aws-cdk-lib/aws-apigatewayv2-authorizers';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import * as path from 'path';
 
@@ -46,6 +47,18 @@ export class Api extends Construct {
     });
 
     props.table.grantReadWriteData(this.function);
+
+    // Grant Cognito admin permissions for RBAC management
+    this.function.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'cognito-idp:AdminAddUserToGroup',
+          'cognito-idp:AdminRemoveUserFromGroup',
+          'cognito-idp:AdminCreateUser',
+        ],
+        resources: [props.userPool.userPoolArn],
+      })
+    );
 
     const issuer = `https://cognito-idp.${region}.amazonaws.com/${props.userPool.userPoolId}`;
     const authorizer = new HttpJwtAuthorizer('CognitoAuthorizer', issuer, {
