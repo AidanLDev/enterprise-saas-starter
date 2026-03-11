@@ -2,9 +2,11 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import * as auth from '../lib/auth';
+import type { UserRole } from '@saas-starter/shared';
 
 interface AuthUser {
   email: string;
+  role: UserRole | null;
 }
 
 interface AuthContextValue {
@@ -16,11 +18,19 @@ interface AuthContextValue {
   resendConfirmationCode: (email: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   confirmForgotPassword: (email: string, code: string, newPassword: string) => Promise<void>;
+  completeNewPassword: (newPassword: string) => Promise<void>;
   signOut: () => void;
   getIdToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function extractRole(payload: Record<string, unknown>): UserRole | null {
+  const groups = payload['cognito:groups'] as string[] | undefined;
+  if (groups?.includes('admin')) return 'admin';
+  if (groups?.includes('user')) return 'user';
+  return null;
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -32,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((session) => {
         if (session) {
           const payload = session.getIdToken().decodePayload();
-          setUser({ email: payload.email });
+          setUser({ email: payload.email, role: extractRole(payload) });
         } else {
           setUser(null);
         }
@@ -61,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleSignIn = useCallback(async (email: string, password: string) => {
     const session = await auth.signIn(email, password);
     const payload = session.getIdToken().decodePayload();
-    setUser({ email: payload.email });
+    setUser({ email: payload.email, role: extractRole(payload) });
   }, []);
 
   const handleSignUp = useCallback(async (email: string, password: string) => {
@@ -87,6 +97,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const handleCompleteNewPassword = useCallback(async (newPassword: string) => {
+    const session = await auth.completeNewPassword(newPassword);
+    const payload = session.getIdToken().decodePayload();
+    setUser({ email: payload.email, role: extractRole(payload) });
+  }, []);
+
   const handleSignOut = useCallback(() => {
     auth.signOut();
     setUser(null);
@@ -103,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resendConfirmationCode: handleResendConfirmationCode,
         forgotPassword: handleForgotPassword,
         confirmForgotPassword: handleConfirmForgotPassword,
+        completeNewPassword: handleCompleteNewPassword,
         signOut: handleSignOut,
         getIdToken: auth.getIdToken,
       }}

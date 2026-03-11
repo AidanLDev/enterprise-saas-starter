@@ -40,6 +40,18 @@ export function confirmSignUp(email: string, code: string): Promise<void> {
   });
 }
 
+export interface NewPasswordRequiredError {
+  code: 'NewPasswordRequired';
+  cognitoUser: CognitoUser;
+}
+
+export function isNewPasswordRequired(err: unknown): err is NewPasswordRequiredError {
+  return (err as NewPasswordRequiredError)?.code === 'NewPasswordRequired';
+}
+
+// Holds the CognitoUser instance during a new-password-required challenge
+let pendingNewPasswordUser: CognitoUser | null = null;
+
 export function signIn(email: string, password: string): Promise<CognitoUserSession> {
   const user = new CognitoUser({ Username: email, Pool: userPool });
   const authDetails = new AuthenticationDetails({
@@ -51,7 +63,30 @@ export function signIn(email: string, password: string): Promise<CognitoUserSess
     user.authenticateUser(authDetails, {
       onSuccess: (session) => resolve(session),
       onFailure: (err) => reject(err),
+      newPasswordRequired: () => {
+        pendingNewPasswordUser = user;
+        reject({ code: 'NewPasswordRequired', cognitoUser: user });
+      },
     });
+  });
+}
+
+export function completeNewPassword(newPassword: string): Promise<CognitoUserSession> {
+  const user = pendingNewPasswordUser;
+  if (!user) throw new Error('No pending new password challenge');
+
+  return new Promise((resolve, reject) => {
+    user.completeNewPasswordChallenge(
+      newPassword,
+      {},
+      {
+        onSuccess: (session) => {
+          pendingNewPasswordUser = null;
+          resolve(session);
+        },
+        onFailure: (err) => reject(err),
+      }
+    );
   });
 }
 
@@ -118,7 +153,7 @@ export function confirmForgotPassword(
   });
 }
 
-export function getIdToken(): Promise<string | null> {
+export async function getIdToken(): Promise<string | null> {
   return getCurrentSession().then((session) =>
     session ? session.getIdToken().getJwtToken() : null
   );

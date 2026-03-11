@@ -10,7 +10,7 @@ export class SaasStack extends cdk.Stack {
     super(scope, id, props);
 
     const database = new Database(this, 'Database');
-    const auth = new Auth(this, 'Auth');
+    const auth = new Auth(this, 'Auth', { table: database.table });
 
     const api = new Api(this, 'Api', {
       table: database.table,
