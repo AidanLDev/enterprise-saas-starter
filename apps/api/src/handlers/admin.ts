@@ -2,6 +2,7 @@ import { APIGatewayProxyEventV2WithJWTAuthorizer } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
+  DeleteCommand,
   PutCommand,
   QueryCommand,
   UpdateCommand,
@@ -9,6 +10,7 @@ import {
 import {
   CognitoIdentityProviderClient,
   AdminAddUserToGroupCommand,
+  AdminDeleteUserCommand,
   AdminRemoveUserFromGroupCommand,
   AdminCreateUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
@@ -171,4 +173,36 @@ export async function handleInviteUser(event: APIGatewayProxyEventV2WithJWTAutho
   );
 
   return jsonResponse(200, { data: { email, role, status: 'invited' } });
+}
+
+export async function handleDeleteUser(event: APIGatewayProxyEventV2WithJWTAuthorizer) {
+  const denied = requireRole(event, 'admin');
+  if (denied) return denied;
+
+  const { userId } = extractPathParams(event, '/admin/users/{userId}');
+  if (!userId) return jsonResponse(400, { error: 'Missing userId' });
+
+  const currentUserId = event.requestContext.authorizer?.jwt?.claims?.sub as string;
+  if (userId === currentUserId) {
+    return jsonResponse(400, { error: 'Cannot delete your own account' });
+  }
+
+  await ddb.send(
+    new DeleteCommand({
+      TableName: TABLE_NAME,
+      Key: {
+        PK: `${ENTITY_PREFIX.USER}${userId}`,
+        SK: `${ENTITY_PREFIX.USER}${userId}`,
+      },
+    })
+  );
+
+  await cognitoClient.send(
+    new AdminDeleteUserCommand({
+      UserPoolId: USER_POOL_ID,
+      Username: userId,
+    })
+  );
+
+  return jsonResponse(200, { data: { userId, status: 'deleted' } });
 }
