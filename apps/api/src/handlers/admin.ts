@@ -1,6 +1,11 @@
 import { APIGatewayProxyEventV2WithJWTAuthorizer } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  DynamoDBDocumentClient,
+  PutCommand,
+  QueryCommand,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
 import {
   CognitoIdentityProviderClient,
   AdminAddUserToGroupCommand,
@@ -119,7 +124,7 @@ export async function handleInviteUser(event: APIGatewayProxyEventV2WithJWTAutho
     return jsonResponse(400, { error: 'Invalid role. Must be "admin" or "user"' });
   }
 
-  await cognitoClient.send(
+  const createResult = await cognitoClient.send(
     new AdminCreateUserCommand({
       UserPoolId: USER_POOL_ID,
       Username: email,
@@ -128,6 +133,40 @@ export async function handleInviteUser(event: APIGatewayProxyEventV2WithJWTAutho
         { Name: 'email_verified', Value: 'true' },
       ],
       DesiredDeliveryMediums: ['EMAIL'],
+    })
+  );
+
+  const sub = createResult.User?.Attributes?.find((a) => a.Name === 'sub')?.Value;
+  if (!sub) {
+    return jsonResponse(500, { error: 'Failed to retrieve user ID from Cognito' });
+  }
+
+  const now = new Date().toISOString();
+
+  // Create user record in DynamoDB (AdminCreateUser does not trigger PostConfirmation)
+  await ddb.send(
+    new PutCommand({
+      TableName: TABLE_NAME,
+      Item: {
+        PK: `${ENTITY_PREFIX.USER}${sub}`,
+        SK: `${ENTITY_PREFIX.USER}${sub}`,
+        GSI1PK: 'USERS',
+        GSI1SK: now,
+        id: sub,
+        email,
+        role,
+        createdAt: now,
+        entityType: 'USER',
+      },
+    })
+  );
+
+  // Sync role to Cognito group
+  await cognitoClient.send(
+    new AdminAddUserToGroupCommand({
+      UserPoolId: USER_POOL_ID,
+      Username: sub,
+      GroupName: role,
     })
   );
 
