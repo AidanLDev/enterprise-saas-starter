@@ -55,6 +55,7 @@ export class Api extends Construct {
           'cognito-idp:AdminAddUserToGroup',
           'cognito-idp:AdminRemoveUserFromGroup',
           'cognito-idp:AdminCreateUser',
+          'cognito-idp:AdminDeleteUser',
         ],
         resources: [props.userPool.userPoolArn],
       })

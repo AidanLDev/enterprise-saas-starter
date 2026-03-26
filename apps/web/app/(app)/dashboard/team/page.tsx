@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useOptimistic, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../components/auth-provider';
-import { apiFetch } from '../../lib/api';
+import { useAuth } from '../../../components/auth-provider';
+import { apiFetch } from '../../../lib/api';
 import type { User, UserRole } from '@saas-starter/shared';
 
 interface UsersResponse {
@@ -15,6 +15,9 @@ export default function TeamPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
+  const [optimisticUsers, addOptimisticUser] = useOptimistic(users, (current, newUser: User) => {
+    return [...current.filter((u) => u.id !== newUser.id), newUser];
+  });
   const [lastKey, setLastKey] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,16 +66,37 @@ export default function TeamPage() {
     }
   }
 
-  async function handleInvite(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleDeleteUser(userId: string) {
+    try {
+      await apiFetch(`/admin/users/${userId}`, { method: 'DELETE' });
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete user');
+    }
+  }
+
+  async function handleInvite() {
     setInviting(true);
     setInviteMessage('');
+    const email = inviteEmail;
+    const role = inviteRole;
+    const optimisticUser: User = {
+      id: crypto.randomUUID(),
+      email,
+      role,
+      createdAt: new Date().toISOString(),
+    };
+    addOptimisticUser(optimisticUser);
     try {
       await apiFetch('/admin/invite', {
         method: 'POST',
-        body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
+        body: JSON.stringify({ email, role }),
       });
-      setInviteMessage(`Invitation sent to ${inviteEmail}`);
+      setUsers((prev) => [
+        ...prev.filter((existingUser) => existingUser.id !== optimisticUser.id),
+        optimisticUser,
+      ]);
+      setInviteMessage(`Invitation sent to ${email}`);
       setInviteEmail('');
       setInviteRole('user');
     } catch (err) {
@@ -99,7 +123,7 @@ export default function TeamPage() {
       {/* Invite form */}
       {showInvite && (
         <form
-          onSubmit={handleInvite}
+          action={handleInvite}
           className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
         >
           <div className="flex gap-4">
@@ -177,14 +201,14 @@ export default function TeamPage() {
                   Loading…
                 </td>
               </tr>
-            ) : users.length === 0 ? (
+            ) : optimisticUsers.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-zinc-500">
                   No users found
                 </td>
               </tr>
             ) : (
-              users.map((u) => (
+              optimisticUsers.map((u) => (
                 <tr
                   key={u.id}
                   className="border-b border-zinc-100 last:border-0 dark:border-zinc-800/50"
@@ -205,15 +229,23 @@ export default function TeamPage() {
                     {new Date(u.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {u.id !== user?.email && (
-                      <select
-                        value={u.role}
-                        onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
-                        className="rounded border border-zinc-300 bg-transparent px-2 py-1 text-xs text-zinc-700 outline-none dark:border-zinc-700 dark:text-zinc-300"
-                      >
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                      </select>
+                    {u.email !== user?.email && (
+                      <div className="flex items-center justify-end gap-2">
+                        <select
+                          value={u.role}
+                          onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
+                          className="rounded border border-zinc-300 bg-transparent px-2 py-1 text-xs text-zinc-700 outline-none dark:border-zinc-700 dark:text-zinc-300"
+                        >
+                          <option value="user">User</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                        <button
+                          onClick={() => handleDeleteUser(u.id)}
+                          className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
