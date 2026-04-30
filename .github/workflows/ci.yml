@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-lint:
+    name: Build and Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://placeholder.example.com/
+          NEXT_PUBLIC_USER_POOL_ID: us-east-1_placeholder
+          NEXT_PUBLIC_USER_POOL_CLIENT_ID: placeholder
+
+      - name: Lint
+        run: pnpm run lint
