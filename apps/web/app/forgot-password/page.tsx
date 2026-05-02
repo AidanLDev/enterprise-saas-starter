@@ -3,7 +3,7 @@
 import { SubmitEvent, Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '../components/auth-provider';
+import { useAuth } from '@/components/auth-provider';
 
 function ForgotPasswordForm() {
   const { forgotPassword } = useAuth();

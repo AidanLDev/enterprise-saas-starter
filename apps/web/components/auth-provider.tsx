@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import * as auth from '../lib/auth';
+import * as auth from '@/lib/auth';
 import type { UserRole } from '@saas-starter/shared';
 
 interface AuthUser {

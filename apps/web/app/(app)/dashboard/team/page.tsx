@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useOptimistic, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../components/auth-provider';
-import { apiFetch } from '../../../lib/api';
+import { useAuth } from '@/components/auth-provider';
+import { apiFetch } from '@/lib/api';
 import type { User, UserRole } from '@saas-starter/shared';
 
 interface UsersResponse {

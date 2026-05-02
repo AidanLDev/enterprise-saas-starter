@@ -1,9 +1,9 @@
-import { InputHTMLAttributes } from 'react';
+import { InputHTMLAttributes, ChangeEvent } from 'react';
 
 interface IInputProps {
   label: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   type?: InputHTMLAttributes<HTMLInputElement>['type'];
   required?: boolean;
   disabled?: boolean;

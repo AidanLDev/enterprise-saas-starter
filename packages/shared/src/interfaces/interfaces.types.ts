@@ -20,12 +20,14 @@ export const COGNITO_GROUPS = {
 
 export const GSI_PREFIX = {
   USERS: 'USERS',
+  PROJECTS: 'PROJECTS',
 } as const;
 
 export interface Project {
   id: string;
   name: string;
-  ownerId: string;
+  description: string;
+  createdBy: string;
   createdAt: string;
 }
 

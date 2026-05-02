@@ -12,6 +12,7 @@ export default function Button(props: Readonly<IButtonProps>) {
     <div>
       <button
         type={props.type}
+        onClick={props.onClick}
         disabled={props.disabled}
         className="w-full rounded-lg bg-zinc-900 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
       >
