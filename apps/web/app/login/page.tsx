@@ -1,13 +1,13 @@
 'use client';
 
 import { SubmitEvent, useState } from 'react';
-import Link from '@/app/components/ui/Link';
+import Link from '@/components/ui/Link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../components/auth-provider';
-import { isNewPasswordRequired } from '../lib/auth';
-import Button from '@/app/components/ui/Button';
-import Input from '@/app/components/ui/Input';
-import Text from '@/app/components/ui/Text';
+import { useAuth } from '@/components/auth-provider';
+import { isNewPasswordRequired } from '../../lib/auth';
+import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Text from '@/components/ui/Text';
 
 export default function LoginPage() {
   const { signIn, completeNewPassword } = useAuth();

@@ -8,6 +8,7 @@ import {
   handleInviteUser,
   handleDeleteUser,
 } from './handlers/admin';
+import { handleCreateProject } from './handlers/project';
 
 route('GET', '/health', handleHealth);
 route('GET', '/users/me', handleGetMe);
@@ -15,6 +16,7 @@ route('GET', '/admin/users', handleListUsers);
 route('PUT', '/admin/users/{userId}/role', handleUpdateUserRole);
 route('POST', '/admin/invite', handleInviteUser);
 route('DELETE', '/admin/users/{userId}', handleDeleteUser);
+route('POST', '/projects', handleCreateProject);
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   const routeHandler = resolve(event);

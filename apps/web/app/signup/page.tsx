@@ -3,7 +3,7 @@
 import { SubmitEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../components/auth-provider';
+import { useAuth } from '@/components/auth-provider';
 
 export default function SignUpPage() {
   const { signUp } = useAuth();

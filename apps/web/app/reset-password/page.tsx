@@ -3,7 +3,7 @@
 import { SubmitEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '../components/auth-provider';
+import { useAuth } from '@/components/auth-provider';
 
 const RESEND_COOLDOWN = 30;
 

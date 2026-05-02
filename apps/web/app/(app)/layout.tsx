@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../components/auth-provider';
-import { SidebarNav } from '../components/sidebar-nav';
+import { useAuth } from '@/components/auth-provider';
+import { SidebarNav } from '@/components/sidebar-nav';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
