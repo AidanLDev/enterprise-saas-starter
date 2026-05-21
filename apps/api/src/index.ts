@@ -9,6 +9,7 @@ import {
   handleDeleteUser,
 } from './handlers/admin';
 import { handleCreateProject } from './handlers/project';
+import { handleDocsHtml, handleDocsJson } from './handlers/docs';
 
 route('GET', '/health', handleHealth);
 route('GET', '/users/me', handleGetMe);
@@ -17,6 +18,8 @@ route('PUT', '/admin/users/{userId}/role', handleUpdateUserRole);
 route('POST', '/admin/invite', handleInviteUser);
 route('DELETE', '/admin/users/{userId}', handleDeleteUser);
 route('POST', '/projects', handleCreateProject);
+route('GET', '/docs/openapi.json', handleDocsJson);
+route('GET', '/docs', handleDocsHtml);
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
   const routeHandler = resolve(event);
