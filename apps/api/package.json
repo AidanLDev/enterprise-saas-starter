@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "sam:build": "sam build",
+    "sam:start": "sam build && sam local start-api"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1039.0",

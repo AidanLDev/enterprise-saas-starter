@@ -1,0 +1,9 @@
+version = 0.1
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.local_start_api.parameters]
+port = 3001
+warm_containers = "EAGER"
