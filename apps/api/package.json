@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "build": "tsc",
-    "sam:build": "sam build",
-    "sam:start": "sam build && sam local start-api"
+    "sam:bundle": "node scripts/sam-bundle.js",
+    "sam:start": "npm run sam:bundle && sam local start-api"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1039.0",
@@ -14,6 +14,7 @@
     "@saas-starter/shared": "workspace:*"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.161"
+    "@types/aws-lambda": "^8.10.161",
+    "esbuild": "^0.25.0"
   }
 }

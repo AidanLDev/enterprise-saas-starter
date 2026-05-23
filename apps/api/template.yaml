@@ -15,15 +15,8 @@ Resources:
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: src/index.handler
-      CodeUri: ./
-      Metadata:
-        BuildMethod: esbuild
-        BuildProperties:
-          Minify: false
-          Target: es2022
-          EntryPoints:
-            - src/index.ts
+      Handler: index.handler
+      CodeUri: .sam-bundle/
       Events:
         ApiProxy:
           Type: HttpApi
