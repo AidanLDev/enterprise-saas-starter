@@ -8,9 +8,9 @@
     "sam:start": "npm run sam:bundle && sam local start-api"
   },
   "dependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.1039.0",
-    "@aws-sdk/client-dynamodb": "^3.1039.0",
-    "@aws-sdk/lib-dynamodb": "^3.1039.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.1053.0",
+    "@aws-sdk/client-dynamodb": "^3.1053.0",
+    "@aws-sdk/lib-dynamodb": "^3.1053.0",
     "@saas-starter/shared": "workspace:*"
   },
   "devDependencies": {
