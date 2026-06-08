@@ -14,7 +14,7 @@
     "@saas-starter/shared": "workspace:*"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.161",
+    "@types/aws-lambda": "^8.10.162",
     "esbuild": "^0.25.0"
   }
 }
