@@ -8,7 +8,12 @@ import {
   handleInviteUser,
   handleDeleteUser,
 } from './handlers/admin';
-import { handleCreateProject } from './handlers/project';
+import {
+  handleCreateProject,
+  handleDeleteProject,
+  handleListProjects,
+  handleUpdateProject,
+} from './handlers/project';
 import { handleDocsHtml, handleDocsJson } from './handlers/docs';
 
 route('GET', '/health', handleHealth);
@@ -17,7 +22,10 @@ route('GET', '/admin/users', handleListUsers);
 route('PUT', '/admin/users/{userId}/role', handleUpdateUserRole);
 route('POST', '/admin/invite', handleInviteUser);
 route('DELETE', '/admin/users/{userId}', handleDeleteUser);
+route('GET', '/projects', handleListProjects);
 route('POST', '/projects', handleCreateProject);
+route('PUT', '/projects/{projectId}', handleUpdateProject);
+route('DELETE', '/projects/{projectId}', handleDeleteProject);
 route('GET', '/docs/openapi.json', handleDocsJson);
 route('GET', '/docs', handleDocsHtml);
 

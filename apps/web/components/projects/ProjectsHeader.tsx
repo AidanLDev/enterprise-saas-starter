@@ -7,7 +7,11 @@ import CreateProjectModal from '@/components/projects/CreateProjectModal';
 import { apiFetch } from '@/lib/api';
 import type { Project } from '@saas-starter/shared';
 
-export default function ProjectsHeader() {
+interface ProjectsHeaderProps {
+  onProjectCreated?: () => void;
+}
+
+export default function ProjectsHeader({ onProjectCreated }: ProjectsHeaderProps) {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +29,7 @@ export default function ProjectsHeader() {
           projectDescription: data.projectDescription,
         }),
       });
+      onProjectCreated?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project');
     }
@@ -33,7 +38,7 @@ export default function ProjectsHeader() {
   return (
     <div>
       <div className="flex w-full items-center justify-between">
-        <h1>Projects</h1>
+        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">Projects</h1>
         {isAdmin && <Button onClick={() => setIsModalOpen(true)}>Create project</Button>}
       </div>
       {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}

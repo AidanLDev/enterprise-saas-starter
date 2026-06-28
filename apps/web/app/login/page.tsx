@@ -7,7 +7,7 @@ import { useAuth } from '@/components/auth-provider';
 import { isNewPasswordRequired } from '../../lib/auth';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import Text from '@/components/ui/Text';
+import Text from '@/components/ui/Typography/Text';
 
 export default function LoginPage() {
   const { signIn, completeNewPassword } = useAuth();
