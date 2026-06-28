@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { apiFetch } from '@/lib/api';
 import type { User, UserRole } from '@saas-starter/shared';
+import ErrorText from '@/components/ui/Typography/ErrorText';
 
 interface UsersResponse {
   data: User[];
@@ -169,11 +170,7 @@ export default function TeamPage() {
         </form>
       )}
 
-      {error && (
-        <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-          {error}
-        </p>
-      )}
+      {error && <ErrorText errorMessage={error} />}
 
       {/* Users table */}
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
