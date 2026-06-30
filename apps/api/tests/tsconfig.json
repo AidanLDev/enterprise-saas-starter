@@ -1,0 +1,12 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "node16",
+    "module": "node16",
+    "types": ["node", "jest"],
+    "paths": {
+      "@saas-starter/shared": ["../../packages/shared/src/index.ts"]
+    }
+  },
+  "include": ["./**/*.ts", "../src/**/*.ts"]
+}

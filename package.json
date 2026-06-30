@@ -24,7 +24,11 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "@smithy/types": "4.14.1",
+      "@aws-sdk/types": "3.973.8"
+    }
   },
   "lint-staged": {
     "**/*.{ts,tsx}": [
