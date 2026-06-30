@@ -18,6 +18,7 @@ interface ApiProps {
 
 export class Api extends Construct {
   public readonly httpApi: apigwv2.HttpApi;
+  public readonly apiUrl: string;
   public readonly function: NodejsFunction;
 
   constructor(scope: Construct, id: string, props: ApiProps) {
@@ -69,6 +70,7 @@ export class Api extends Construct {
     const integration = new HttpLambdaIntegration('LambdaIntegration', this.function);
 
     this.httpApi = new apigwv2.HttpApi(this, 'HttpApi', {
+      createDefaultStage: false,
       corsPreflight: {
         allowOrigins: ['*'], // Restrict in production
         allowMethods: [
@@ -81,6 +83,17 @@ export class Api extends Construct {
         allowHeaders: ['Authorization', 'Content-Type'],
       },
     });
+
+    const defaultStage = this.httpApi.addStage('DefaultStage', {
+      stageName: '$default',
+      autoDeploy: true,
+      throttle: {
+        rateLimit: 200, // sustained req/s across all clients
+        burstLimit: 400, // max concurrent spike
+      },
+    });
+
+    this.apiUrl = defaultStage.url;
 
     // Protected routes (JWT auth required)
     this.httpApi.addRoutes({

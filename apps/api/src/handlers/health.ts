@@ -1,7 +1,7 @@
-import { APIGatewayProxyEventV2 } from 'aws-lambda';
 import { jsonResponse } from '../router';
+import { logger } from '../logger';
 
-export async function handleHealth(_event: APIGatewayProxyEventV2) {
-  console.log('Health check endpoint called: ', _event);
+export async function handleHealth() {
+  logger.debug('Health check');
   return jsonResponse(200, { status: 'ok', timestamp: new Date().toISOString() });
 }

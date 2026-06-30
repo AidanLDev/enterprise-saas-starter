@@ -19,7 +19,7 @@ export class SaasStack extends cdk.Stack {
     });
 
     const frontend = new Frontend(this, 'Frontend', {
-      apiUrl: api.httpApi.url!,
+      apiUrl: api.apiUrl,
       userPoolId: auth.userPool.userPoolId,
       userPoolClientId: auth.userPoolClient.userPoolClientId,
     });
@@ -29,7 +29,7 @@ export class SaasStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'UserPoolClientId', {
       value: auth.userPoolClient.userPoolClientId,
     });
-    new cdk.CfnOutput(this, 'ApiUrl', { value: api.httpApi.url! });
+    new cdk.CfnOutput(this, 'ApiUrl', { value: api.apiUrl });
     new cdk.CfnOutput(this, 'FrontendUrl', {
       value: `https://${frontend.distribution.distributionDomainName}`,
     });
