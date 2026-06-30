@@ -1,21 +1,14 @@
 import { APIGatewayProxyEventV2WithJWTAuthorizer } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import {
-  DynamoDBDocumentClient,
-  DeleteCommand,
-  PutCommand,
-  QueryCommand,
-  UpdateCommand,
-} from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import {
   CognitoIdentityProviderClient,
-  AdminAddUserToGroupCommand,
   AdminDeleteUserCommand,
-  AdminRemoveUserFromGroupCommand,
-  AdminCreateUserCommand,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { jsonResponse, extractPathParams } from '../router';
 import { requireRole } from '../middleware/require-role';
+import { validateBody, Schema } from '../middleware/validate';
+import { inviteUser, updateUserRole } from '../services/user-service';
 import { ENTITY_PREFIX } from '@saas-starter/shared';
 import type { UserRole } from '@saas-starter/shared';
 
@@ -25,6 +18,16 @@ const TABLE_NAME = process.env.TABLE_NAME!;
 const USER_POOL_ID = process.env.USER_POOL_ID!;
 
 const VALID_ROLES: UserRole[] = ['admin', 'user'];
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const updateRoleSchema: Schema = {
+  role: { type: 'string', required: true, oneOf: VALID_ROLES },
+};
+
+const inviteUserSchema: Schema = {
+  email: { type: 'string', required: true, maxLength: 254, pattern: EMAIL_PATTERN },
+  role: { type: 'string', oneOf: VALID_ROLES },
+};
 
 export async function handleListUsers(event: APIGatewayProxyEventV2WithJWTAuthorizer) {
   const denied = requireRole(event, 'admin');
@@ -65,114 +68,24 @@ export async function handleUpdateUserRole(event: APIGatewayProxyEventV2WithJWTA
     return jsonResponse(400, { error: 'Cannot change your own role' });
   }
 
-  const body = JSON.parse(event.body || '{}');
-  const newRole = body.role as UserRole;
-  if (!VALID_ROLES.includes(newRole)) {
-    return jsonResponse(400, { error: 'Invalid role. Must be "admin" or "user"' });
-  }
+  const validation = validateBody<{ role: UserRole }>(event, updateRoleSchema);
+  if (!validation.ok) return validation.response;
+  const { role: newRole } = validation.data;
 
-  // Get current user to find old role
-  const userKey = {
-    PK: `${ENTITY_PREFIX.USER}${userId}`,
-    SK: `${ENTITY_PREFIX.USER}${userId}`,
-  };
-
-  const updateResult = await ddb.send(
-    new UpdateCommand({
-      TableName: TABLE_NAME,
-      Key: userKey,
-      UpdateExpression: 'SET #role = :role',
-      ExpressionAttributeNames: { '#role': 'role' },
-      ExpressionAttributeValues: { ':role': newRole },
-      ReturnValues: 'ALL_NEW',
-    })
-  );
-
-  if (!updateResult.Attributes) {
-    return jsonResponse(404, { error: 'User not found' });
-  }
-
-  const oldRole = newRole === 'admin' ? 'user' : 'admin';
-
-  // Swap Cognito groups
-  await cognitoClient.send(
-    new AdminRemoveUserFromGroupCommand({
-      UserPoolId: USER_POOL_ID,
-      Username: userId,
-      GroupName: oldRole,
-    })
-  );
-
-  await cognitoClient.send(
-    new AdminAddUserToGroupCommand({
-      UserPoolId: USER_POOL_ID,
-      Username: userId,
-      GroupName: newRole,
-    })
-  );
-
-  return jsonResponse(200, { data: updateResult.Attributes });
+  const { user } = await updateUserRole({ userId, newRole });
+  return jsonResponse(200, { data: user });
 }
 
 export async function handleInviteUser(event: APIGatewayProxyEventV2WithJWTAuthorizer) {
   const denied = requireRole(event, 'admin');
   if (denied) return denied;
 
-  const body = JSON.parse(event.body || '{}');
-  const { email, role = 'user' } = body as { email?: string; role?: UserRole };
+  const validation = validateBody<{ email: string; role?: UserRole }>(event, inviteUserSchema);
+  if (!validation.ok) return validation.response;
+  const { email, role = 'user' } = validation.data;
 
-  if (!email) return jsonResponse(400, { error: 'Email is required' });
-  if (!VALID_ROLES.includes(role)) {
-    return jsonResponse(400, { error: 'Invalid role. Must be "admin" or "user"' });
-  }
-
-  const createResult = await cognitoClient.send(
-    new AdminCreateUserCommand({
-      UserPoolId: USER_POOL_ID,
-      Username: email,
-      UserAttributes: [
-        { Name: 'email', Value: email },
-        { Name: 'email_verified', Value: 'true' },
-      ],
-      DesiredDeliveryMediums: ['EMAIL'],
-    })
-  );
-
-  const sub = createResult.User?.Attributes?.find((a) => a.Name === 'sub')?.Value;
-  if (!sub) {
-    return jsonResponse(500, { error: 'Failed to retrieve user ID from Cognito' });
-  }
-
-  const now = new Date().toISOString();
-
-  // Create user record in DynamoDB (AdminCreateUser does not trigger PostConfirmation)
-  await ddb.send(
-    new PutCommand({
-      TableName: TABLE_NAME,
-      Item: {
-        PK: `${ENTITY_PREFIX.USER}${sub}`,
-        SK: `${ENTITY_PREFIX.USER}${sub}`,
-        GSI1PK: 'USERS',
-        GSI1SK: now,
-        id: sub,
-        email,
-        role,
-        createdAt: now,
-        entityType: 'USER',
-      },
-    })
-  );
-
-  // Sync role to Cognito group
-  await cognitoClient.send(
-    new AdminAddUserToGroupCommand({
-      UserPoolId: USER_POOL_ID,
-      Username: sub,
-      GroupName: role,
-    })
-  );
-
-  return jsonResponse(200, { data: { email, role, status: 'invited' } });
+  const result = await inviteUser({ email, role });
+  return jsonResponse(200, { data: result });
 }
 
 export async function handleDeleteUser(event: APIGatewayProxyEventV2WithJWTAuthorizer) {

@@ -8,24 +8,31 @@ import {
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { requireRole } from '../middleware/require-role';
+import { validateBody, Schema } from '../middleware/validate';
 import { jsonResponse, extractPathParams } from '../router';
+import { NotFoundError } from '../errors';
 import { ENTITY_PREFIX, GSI_PREFIX, Project } from '@saas-starter/shared';
 
 const ddb = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE_NAME = process.env.TABLE_NAME!;
 
+const projectSchema: Schema = {
+  projectName: { type: 'string', required: true, minLength: 1, maxLength: 120 },
+  projectDescription: { type: 'string', maxLength: 2000 },
+};
+
 export async function handleCreateProject(event: APIGatewayProxyEventV2WithJWTAuthorizer) {
   const denied = requireRole(event, 'admin');
   if (denied) return denied;
 
-  const body = JSON.parse(event.body || '{}');
-  const { projectName, projectDescription } = body as {
-    projectName?: string;
-    projectDescription?: string;
-  };
-  const currentUserId = event.requestContext.authorizer?.jwt?.claims?.sub as string;
+  const result = validateBody<{ projectName: string; projectDescription?: string }>(
+    event,
+    projectSchema
+  );
+  if (!result.ok) return result.response;
+  const { projectName, projectDescription } = result.data;
 
-  if (!projectName) return jsonResponse(400, { error: 'Project name is required' });
+  const currentUserId = event.requestContext.authorizer?.jwt?.claims?.sub as string;
   if (!currentUserId) return jsonResponse(401, { error: 'Unauthorized' });
 
   const id = crypto.randomUUID();
@@ -64,32 +71,39 @@ export async function handleUpdateProject(event: APIGatewayProxyEventV2WithJWTAu
   const { projectId } = extractPathParams(event, '/projects/{projectId}');
   if (!projectId) return jsonResponse(400, { error: 'Project ID is required' });
 
-  const body = JSON.parse(event.body || '{}');
-  const { projectName, projectDescription } = body as {
-    projectName?: string;
-    projectDescription?: string;
-  };
-
-  if (!projectName) return jsonResponse(400, { error: 'Project name is required' });
+  const validation = validateBody<{ projectName: string; projectDescription?: string }>(
+    event,
+    projectSchema
+  );
+  if (!validation.ok) return validation.response;
+  const { projectName, projectDescription } = validation.data;
 
   const pk = `${ENTITY_PREFIX.PROJECT}${projectId}`;
 
-  const result = await ddb.send(
-    new UpdateCommand({
-      TableName: TABLE_NAME,
-      Key: { PK: pk, SK: pk },
-      ConditionExpression: 'attribute_exists(PK)',
-      UpdateExpression: 'SET #name = :name, description = :description',
-      ExpressionAttributeNames: { '#name': 'name' },
-      ExpressionAttributeValues: {
-        ':name': projectName,
-        ':description': projectDescription ?? '',
-      },
-      ReturnValues: 'ALL_NEW',
-    })
-  );
+  let updateResult;
+  try {
+    updateResult = await ddb.send(
+      new UpdateCommand({
+        TableName: TABLE_NAME,
+        Key: { PK: pk, SK: pk },
+        ConditionExpression: 'attribute_exists(PK)',
+        UpdateExpression: 'SET #name = :name, description = :description',
+        ExpressionAttributeNames: { '#name': 'name' },
+        ExpressionAttributeValues: {
+          ':name': projectName,
+          ':description': projectDescription ?? '',
+        },
+        ReturnValues: 'ALL_NEW',
+      })
+    );
+  } catch (error) {
+    if (error instanceof Error && error.name === 'ConditionalCheckFailedException') {
+      throw new NotFoundError('Project not found');
+    }
+    throw error;
+  }
 
-  return jsonResponse(200, { data: result.Attributes });
+  return jsonResponse(200, { data: updateResult.Attributes });
 }
 
 export async function handleDeleteProject(event: APIGatewayProxyEventV2WithJWTAuthorizer) {
