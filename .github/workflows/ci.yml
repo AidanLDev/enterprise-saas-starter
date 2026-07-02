@@ -4,19 +4,31 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Placeholder values so the frontend can build without a deployed backend.
+  # Real values are injected at deploy time from the CDK stack outputs.
+  NEXT_PUBLIC_API_URL: https://placeholder.example.com/
+  NEXT_PUBLIC_USER_POOL_ID: us-east-1_placeholder
+  NEXT_PUBLIC_USER_POOL_CLIENT_ID: placeholder
 
 jobs:
-  build-and-lint:
-    name: Build and Lint
+  checks:
+    name: Lint, Test and Build
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
+      # Reads the pnpm version from the packageManager field in package.json
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-          run_install: false
 
       - uses: actions/setup-node@v4
         with:
@@ -26,12 +38,57 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm run build
-        env:
-          NEXT_PUBLIC_API_URL: https://placeholder.example.com/
-          NEXT_PUBLIC_USER_POOL_ID: us-east-1_placeholder
-          NEXT_PUBLIC_USER_POOL_CLIENT_ID: placeholder
+      - name: Check formatting
+        run: pnpm run format:check
 
       - name: Lint
         run: pnpm run lint
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Test API
+        run: pnpm --filter @saas-starter/api test
+
+      # Validates the CDK stack synthesizes cleanly without needing AWS
+      # credentials. Runs after Build because the stack bundles the static
+      # frontend from apps/web/out as a deployment asset.
+      - name: Synthesize CDK stack
+        run: pnpm --filter @saas-starter/infra synth
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reads the pnpm version from the packageManager field in package.json
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The Playwright web server runs `next dev`, which resolves
+      # @saas-starter/shared from its built output.
+      - name: Build shared package
+        run: pnpm --filter @saas-starter/shared build
+
+      - name: Install Playwright browsers
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: pnpm --filter web test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7

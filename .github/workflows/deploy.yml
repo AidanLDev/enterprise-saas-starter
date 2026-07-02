@@ -1,0 +1,97 @@
+name: Deploy
+
+# Deploys the CDK stack (and the frontend it bundles) to AWS.
+#
+# One-time setup, per AWS account:
+#   1. Bootstrap the account for CDK: `npx cdk bootstrap`
+#   2. Create a GitHub OIDC identity provider and an IAM role that trusts
+#      this repository (no long-lived access keys needed)
+#   3. Set repository variables (Settings > Secrets and variables > Actions):
+#        AWS_ROLE_ARN - the ARN of the IAM role from step 2
+#        AWS_REGION   - the region to deploy to
+#
+# Until AWS_ROLE_ARN is set, this workflow skips silently, so CI stays green
+# on a fresh clone of the repo.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+# Never run two CloudFormation deployments at once; queue instead.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to AWS
+    runs-on: ubuntu-latest
+    if: vars.AWS_ROLE_ARN != ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Reads the pnpm version from the packageManager field in package.json
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      # The frontend build needs the API URL and Cognito IDs, which are
+      # outputs of the stack itself. Read them from the currently deployed
+      # stack; on the very first deploy they don't exist yet, so the build
+      # uses empty values and the "Rebuild frontend" step below fixes it up.
+      - name: Load stack outputs
+        run: |
+          outputs=$(aws cloudformation describe-stacks --stack-name SaasStack \
+            --query 'Stacks[0].Outputs' --output json 2>/dev/null || echo '[]')
+          output_value() {
+            echo "$outputs" | jq -r --arg key "$1" '.[] | select(.OutputKey == $key) | .OutputValue'
+          }
+          {
+            echo "NEXT_PUBLIC_API_URL=$(output_value ApiUrl)"
+            echo "NEXT_PUBLIC_USER_POOL_ID=$(output_value UserPoolId)"
+            echo "NEXT_PUBLIC_USER_POOL_CLIENT_ID=$(output_value UserPoolClientId)"
+          } >> "$GITHUB_ENV"
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Deploy stack
+        run: pnpm --filter @saas-starter/infra exec cdk deploy --require-approval never --outputs-file cdk-outputs.json
+
+      # On the first deploy (or if the API/Cognito resources were replaced)
+      # the frontend was built against stale values, so rebuild it with the
+      # fresh stack outputs and redeploy. No-op on regular deploys.
+      - name: Rebuild frontend if stack outputs changed
+        run: |
+          api_url=$(jq -r '.SaasStack.ApiUrl' packages/infra/cdk-outputs.json)
+          user_pool_id=$(jq -r '.SaasStack.UserPoolId' packages/infra/cdk-outputs.json)
+          client_id=$(jq -r '.SaasStack.UserPoolClientId' packages/infra/cdk-outputs.json)
+          if [ "$api_url" != "$NEXT_PUBLIC_API_URL" ] ||
+            [ "$user_pool_id" != "$NEXT_PUBLIC_USER_POOL_ID" ] ||
+            [ "$client_id" != "$NEXT_PUBLIC_USER_POOL_CLIENT_ID" ]; then
+            echo 'Stack outputs changed; rebuilding frontend with fresh values'
+            NEXT_PUBLIC_API_URL="$api_url" \
+              NEXT_PUBLIC_USER_POOL_ID="$user_pool_id" \
+              NEXT_PUBLIC_USER_POOL_CLIENT_ID="$client_id" \
+              pnpm --filter web build
+            pnpm --filter @saas-starter/infra exec cdk deploy --require-approval never
+          fi
