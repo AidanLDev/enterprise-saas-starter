@@ -1,4 +1,4 @@
-import { QueryCommand, DeleteCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { QueryCommand, DeleteCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import {
   AdminDeleteUserCommand,
   AdminCreateUserCommand,
@@ -50,6 +50,18 @@ describe('handleListUsers', () => {
     expect(res.statusCode).toBe(200);
     expect(body.lastKey).toBeDefined();
   });
+
+  it('passes a provided lastKey to DynamoDB as ExclusiveStartKey', async () => {
+    ddbMock.on(QueryCommand).resolves({ Items: [] });
+
+    const lastKey = encodeURIComponent(JSON.stringify({ PK: 'USER#abc' }));
+    const event = makeEvent({ role: 'admin', queryStringParameters: { lastKey } });
+    const res = asStructuredResult(await handleListUsers(event));
+
+    expect(res.statusCode).toBe(200);
+    const queryInput = ddbMock.commandCalls(QueryCommand)[0].args[0].input;
+    expect(queryInput.ExclusiveStartKey).toEqual({ PK: 'USER#abc' });
+  });
 });
 
 // ─── handleUpdateUserRole ─────────────────────────────────────────────────────
@@ -59,6 +71,18 @@ describe('handleUpdateUserRole', () => {
     const event = makeEvent({ role: 'user', path: '/admin/users/other-id/role' });
     const res = asStructuredResult(await handleUpdateUserRole(event));
     expect(res.statusCode).toBe(403);
+  });
+
+  it('returns 400 when the path does not contain a userId', async () => {
+    const event = makeEvent({
+      role: 'admin',
+      path: '/admin/users//role',
+      method: 'PUT',
+      body: { role: 'user' },
+    });
+    const res = asStructuredResult(await handleUpdateUserRole(event));
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body as string).error).toMatch(/userId/i);
   });
 
   it('returns 400 when trying to change own role', async () => {
@@ -132,7 +156,7 @@ describe('handleInviteUser', () => {
     cognitoMock.on(AdminCreateUserCommand).resolves({
       User: { Attributes: [{ Name: 'sub', Value: 'new-sub-id' }] },
     });
-    ddbMock.on(UpdateCommand).resolves({});
+    ddbMock.on(PutCommand).resolves({});
     cognitoMock.on(AdminAddUserToGroupCommand).resolves({});
 
     const event = makeEvent({ role: 'admin', body: { email: 'new@example.com' } });
@@ -142,13 +166,25 @@ describe('handleInviteUser', () => {
     expect(res.statusCode).toBe(200);
     expect(body.data.role).toBe('user');
     expect(body.data.status).toBe('invited');
+
+    const putInput = ddbMock.commandCalls(PutCommand)[0].args[0].input;
+    expect(putInput.TableName).toBe('test-table');
+    expect(putInput.Item).toMatchObject({
+      PK: 'USER#new-sub-id',
+      SK: 'USER#new-sub-id',
+      GSI1PK: 'USERS',
+      id: 'new-sub-id',
+      email: 'new@example.com',
+      role: 'user',
+      entityType: 'USER',
+    });
   });
 
   it('invites user with explicit admin role', async () => {
     cognitoMock.on(AdminCreateUserCommand).resolves({
       User: { Attributes: [{ Name: 'sub', Value: 'new-sub-id' }] },
     });
-    ddbMock.on(UpdateCommand).resolves({});
+    ddbMock.on(PutCommand).resolves({});
     cognitoMock.on(AdminAddUserToGroupCommand).resolves({});
 
     const event = makeEvent({ role: 'admin', body: { email: 'new@example.com', role: 'admin' } });
