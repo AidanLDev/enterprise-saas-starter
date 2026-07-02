@@ -25,6 +25,14 @@ describe('handleCreateProject', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  it('returns 401 when the sub claim is missing', async () => {
+    const event = makeEvent({ role: 'admin', method: 'POST', body: { projectName: 'Test' } });
+    delete (event.requestContext.authorizer!.jwt.claims as Record<string, unknown>).sub;
+
+    const res = asStructuredResult(await handleCreateProject(event));
+    expect(res.statusCode).toBe(401);
+  });
+
   it('creates project and returns 201', async () => {
     ddbMock.on(PutCommand).resolves({});
 
@@ -187,5 +195,21 @@ describe('handleListProjects', () => {
 
     expect(res.statusCode).toBe(200);
     expect(body.lastKey).toBeDefined();
+  });
+
+  it('passes a provided lastKey to DynamoDB as ExclusiveStartKey', async () => {
+    ddbMock.on(QueryCommand).resolves({ Items: [] });
+
+    const lastKey = encodeURIComponent(JSON.stringify({ PK: 'PROJECT#abc' }));
+    const event = makeEvent({
+      role: 'user',
+      path: '/projects',
+      queryStringParameters: { lastKey },
+    });
+    const res = asStructuredResult(await handleListProjects(event));
+
+    expect(res.statusCode).toBe(200);
+    const queryInput = ddbMock.commandCalls(QueryCommand)[0].args[0].input;
+    expect(queryInput.ExclusiveStartKey).toEqual({ PK: 'PROJECT#abc' });
   });
 });

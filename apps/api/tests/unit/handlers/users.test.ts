@@ -7,6 +7,14 @@ beforeEach(resetMocks);
 // ─── handleGetMe ──────────────────────────────────────────────────────────────
 
 describe('handleGetMe', () => {
+  it('returns 401 when the sub claim is missing', async () => {
+    const event = makeEvent({});
+    delete (event.requestContext.authorizer!.jwt.claims as Record<string, unknown>).sub;
+
+    const res = asStructuredResult(await handleGetMe(event));
+    expect(res.statusCode).toBe(401);
+  });
+
   it('returns 404 when user is not found', async () => {
     ddbMock.on(GetCommand).resolves({});
 

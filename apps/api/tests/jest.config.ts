@@ -3,6 +3,7 @@ import { defineConfig } from 'jest';
 export default defineConfig({
   verbose: true,
   testEnvironment: 'node',
+  setupFiles: ['<rootDir>/setup-env.ts'],
   roots: ['<rootDir>/unit'],
   testMatch: ['**/*.test.ts'],
   transform: {
