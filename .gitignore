@@ -52,5 +52,6 @@ next-env.d.ts
 # Build
 cdk.out
 cdk-outputs.json
+bootstrap-outputs.json
 .sam-bundle
 .aws-sam

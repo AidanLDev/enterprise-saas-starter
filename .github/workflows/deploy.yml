@@ -2,13 +2,10 @@ name: Deploy
 
 # Deploys the CDK stack (and the frontend it bundles) to AWS.
 #
-# One-time setup, per AWS account:
-#   1. Bootstrap the account for CDK: `npx cdk bootstrap`
-#   2. Create a GitHub OIDC identity provider and an IAM role that trusts
-#      this repository (no long-lived access keys needed)
-#   3. Set repository variables (Settings > Secrets and variables > Actions):
-#        AWS_ROLE_ARN - the ARN of the IAM role from step 2
-#        AWS_REGION   - the region to deploy to
+# One-time setup: run `pnpm run bootstrap` locally with admin AWS credentials.
+# It bootstraps the account for CDK, deploys the GithubOidcStack (OIDC
+# provider + IAM deploy role, no long-lived access keys), and sets the
+# AWS_ROLE_ARN and AWS_REGION repository variables this workflow reads.
 #
 # Until AWS_ROLE_ARN is set, this workflow skips silently, so CI stays green
 # on a fresh clone of the repo.
