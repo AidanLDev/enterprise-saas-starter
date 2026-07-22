@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# apps/web
 
-## Getting Started
+The frontend: a [Next.js](https://nextjs.org) (App Router) app styled with Tailwind, statically exported (`output: 'export'`) and served from S3 via CloudFront. Handles authentication (via Cognito) and the authenticated app shell.
 
-First, run the development server:
+Because it's a static export, there's no Next.js server at request time — pages fetch dynamic data client-side against the API (see [lib/api.ts](lib/api.ts)) rather than relying on server-side rendering per request.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+See the [root README](../../README.md) for how this fits into the rest of the monorepo.
+
+## Structure
+
+```
+app/
+  (app)/            authenticated routes — dashboard, projects, team
+  login/
+  signup/
+  confirm/          Cognito email confirmation
+  forgot-password/
+  reset-password/
+components/
+  ui/                shared, generic UI primitives (Button, Input, Modal, ...)
+  projects/          feature-specific components
+  auth-provider.tsx  Cognito session/auth context
+  sidebar-nav.tsx
+lib/
+  api.ts             fetch wrapper for the backend API
+  auth.ts            Cognito auth helpers
+  config.ts           reads NEXT_PUBLIC_* env vars
+e2e/                 Playwright end-to-end tests
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Configuration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The app reads its Cognito and API settings from environment variables (see [lib/config.ts](lib/config.ts)):
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+NEXT_PUBLIC_API_URL             # base URL of the deployed API
+NEXT_PUBLIC_USER_POOL_ID        # Cognito user pool ID
+NEXT_PUBLIC_USER_POOL_CLIENT_ID # Cognito app client ID
+```
 
-## Learn More
+Locally these live in `.env.local` (gitignored). After running `pnpm deploy` from the repo root, `scripts/sync-env.mjs` writes these automatically from the CDK stack outputs — you shouldn't need to set them by hand unless you're pointing at infra deployed some other way.
 
-To learn more about Next.js, take a look at the following resources:
+## Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+From the repo root:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm dev
+```
 
-## Deploy on Vercel
+Or from this directory:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+pnpm dev          # start the dev server on http://localhost:3000
+pnpm build        # production build
+pnpm start         # run a production build locally
+pnpm lint          # eslint
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Testing
+
+End-to-end tests use [Playwright](https://playwright.dev):
+
+```bash
+pnpm test:e2e      # run e2e tests headless
+pnpm test:e2e:ui   # run with the Playwright UI
+```
+
+## Deployment
+
+This app is deployed as static/SSR assets to CloudFront via OpenNext, defined in [packages/infra](../../packages/infra/README.md). It isn't deployed independently — run `pnpm deploy` from the repo root, which builds this app and deploys it as part of the full stack.
