@@ -61,14 +61,11 @@ function EditForm({ project, onClose, onSubmit }: EditFormProps) {
       />
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex gap-2 pt-1">
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={saving}
-          className="flex-1 rounded-lg border border-zinc-200 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-        >
-          Cancel
-        </button>
+        <div className="flex-1">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
+            Cancel
+          </Button>
+        </div>
         <div className="flex-1">
           <Button type="submit" disabled={!projectName.trim() || saving}>
             {saving ? 'Saving…' : 'Save changes'}

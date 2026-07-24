@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from './auth-provider';
+import Button from '@/components/ui/Button';
 
 function NavLink({
   href,
@@ -55,15 +56,17 @@ export function SidebarNav() {
 
       <div className="border-t border-zinc-200 p-4 dark:border-zinc-800">
         <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">{user.email}</p>
-        <button
+        <Button
           onClick={() => {
             signOut();
             router.push('/login');
           }}
-          className="mt-2 w-full rounded-lg border border-zinc-300 py-1.5 text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+          variant="secondary"
+          size="sm"
+          className="mt-2 border-zinc-300 py-1.5 dark:border-zinc-700"
         >
           Sign out
-        </button>
+        </Button>
       </div>
     </aside>
   );

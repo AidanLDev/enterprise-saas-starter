@@ -4,6 +4,7 @@ import { SubmitEvent, Suspense, useCallback, useEffect, useRef, useState } from 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
+import Button from '@/components/ui/Button';
 
 const RESEND_COOLDOWN = 30;
 
@@ -125,26 +126,24 @@ function ResetPasswordForm() {
         />
       </label>
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full rounded-lg bg-zinc-900 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-      >
+      <Button type="submit" disabled={submitting}>
         {submitting ? 'Resetting…' : 'Reset password'}
-      </button>
+      </Button>
 
       <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
         {countdown > 0 ? (
           <>Resend code in {countdown}s</>
         ) : (
-          <button
+          <Button
             type="button"
+            variant="link"
+            fullWidth={false}
             disabled={resending}
             onClick={handleResend}
-            className="font-medium text-zinc-900 hover:underline disabled:opacity-50 dark:text-zinc-50 cursor-pointer dark:hover:text-zinc-200"
+            className="cursor-pointer"
           >
             {resending ? 'Resending…' : 'Resend code'}
-          </button>
+          </Button>
         )}
       </p>
 

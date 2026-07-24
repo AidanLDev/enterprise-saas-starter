@@ -29,7 +29,7 @@ export class Api extends Construct {
     this.function = new NodejsFunction(this, 'Handler', {
       entry: path.join(__dirname, '../../../../apps/api/src/index.ts'),
       handler: 'handler',
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_LATEST,
       memorySize: 512,
       timeout: cdk.Duration.seconds(29),
       environment: {

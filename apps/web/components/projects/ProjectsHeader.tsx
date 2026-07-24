@@ -39,7 +39,11 @@ export default function ProjectsHeader({ onProjectCreated }: ProjectsHeaderProps
     <div>
       <div className="flex w-full items-center justify-between">
         <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">Projects</h1>
-        {isAdmin && <Button onClick={() => setIsModalOpen(true)}>Create project</Button>}
+        {isAdmin && (
+          <Button onClick={() => setIsModalOpen(true)} fullWidth={false} className="px-4">
+            Create project
+          </Button>
+        )}
       </div>
       {error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>}
       <CreateProjectModal

@@ -6,6 +6,14 @@ import { useAuth } from '@/components/auth-provider';
 import { apiFetch } from '@/lib/api';
 import type { User, UserRole } from '@saas-starter/shared';
 import ErrorText from '@/components/ui/Typography/ErrorText';
+import Select from '@/components/ui/Select';
+import Button from '@/components/ui/Button';
+import Table from '@/components/ui/Table';
+
+const ROLE_OPTIONS = [
+  { value: 'user', label: 'User' },
+  { value: 'admin', label: 'Admin' },
+];
 
 interface UsersResponse {
   data: User[];
@@ -30,30 +38,39 @@ export default function TeamPage() {
   const [inviting, setInviting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState('');
 
-  const fetchUsers = useCallback(async (cursor?: string) => {
+  const loadMore = useCallback(async (cursor: string) => {
     try {
-      const params = cursor ? `?lastKey=${cursor}` : '';
-      const res = await apiFetch<UsersResponse>(`/admin/users${params}`);
-      if (cursor) {
-        setUsers((prev) => [...prev, ...res.data]);
-      } else {
-        setUsers(res.data);
-      }
+      const res = await apiFetch<UsersResponse>(`/admin/users?lastKey=${cursor}`);
+      setUsers((prev) => [...prev, ...res.data]);
       setLastKey(res.lastKey);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load users');
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (user && user.role !== 'admin') {
+    if (!user) return;
+    if (user.role !== 'admin') {
       router.replace('/dashboard');
       return;
     }
-    if (user) fetchUsers();
-  }, [user, router, fetchUsers]);
+    let cancelled = false;
+    apiFetch<UsersResponse>('/admin/users')
+      .then((res) => {
+        if (cancelled) return;
+        setUsers(res.data);
+        setLastKey(res.lastKey);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load users');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, router]);
 
   async function handleRoleChange(userId: string, newRole: UserRole) {
     try {
@@ -113,12 +130,9 @@ export default function TeamPage() {
     <div className="max-w-4xl space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Team</h1>
-        <button
-          onClick={() => setShowInvite(!showInvite)}
-          className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
+        <Button onClick={() => setShowInvite(!showInvite)} fullWidth={false} className="px-4">
           Invite user
-        </button>
+        </Button>
       </div>
 
       {/* Invite form */}
@@ -145,23 +159,16 @@ export default function TeamPage() {
               <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
                 Role
               </label>
-              <select
+              <Select
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value as UserRole)}
-                className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:text-zinc-50"
-              >
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
-              </select>
+                options={ROLE_OPTIONS}
+              />
             </div>
             <div className="flex items-end">
-              <button
-                type="submit"
-                disabled={inviting}
-                className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-              >
+              <Button type="submit" disabled={inviting} fullWidth={false} className="px-4">
                 {inviting ? 'Sending…' : 'Send invite'}
-              </button>
+              </Button>
             </div>
           </div>
           {inviteMessage && (
@@ -173,92 +180,77 @@ export default function TeamPage() {
       {error && <ErrorText errorMessage={error} />}
 
       {/* Users table */}
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-800">
-              <th className="px-4 py-3 text-left font-medium text-zinc-500 dark:text-zinc-400">
-                Email
-              </th>
-              <th className="px-4 py-3 text-left font-medium text-zinc-500 dark:text-zinc-400">
-                Role
-              </th>
-              <th className="px-4 py-3 text-left font-medium text-zinc-500 dark:text-zinc-400">
-                Joined
-              </th>
-              <th className="px-4 py-3 text-right font-medium text-zinc-500 dark:text-zinc-400">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-zinc-500">
-                  Loading…
-                </td>
-              </tr>
-            ) : optimisticUsers.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-zinc-500">
-                  No users found
-                </td>
-              </tr>
-            ) : (
-              optimisticUsers.map((u) => (
-                <tr
-                  key={u.id}
-                  className="border-b border-zinc-100 last:border-0 dark:border-zinc-800/50"
-                >
-                  <td className="px-4 py-3 text-zinc-900 dark:text-zinc-50">{u.email}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        u.role === 'admin'
-                          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                          : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                      }`}
-                    >
-                      {u.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">
-                    {new Date(u.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {u.email !== user?.email && (
-                      <div className="flex items-center justify-end gap-2">
-                        <select
-                          value={u.role}
-                          onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
-                          className="rounded border border-zinc-300 bg-transparent px-2 py-1 text-xs text-zinc-700 outline-none dark:border-zinc-700 dark:text-zinc-300"
-                        >
-                          <option value="user">User</option>
-                          <option value="admin">Admin</option>
-                        </select>
-                        <button
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Table
+        columns={[
+          {
+            key: 'email',
+            header: 'Email',
+            render: (u) => <span className="text-zinc-900 dark:text-zinc-50">{u.email}</span>,
+          },
+          {
+            key: 'role',
+            header: 'Role',
+            render: (u) => (
+              <span
+                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                  u.role === 'admin'
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                }`}
+              >
+                {u.role}
+              </span>
+            ),
+          },
+          {
+            key: 'joined',
+            header: 'Joined',
+            render: (u) => (
+              <span className="text-zinc-500 dark:text-zinc-400">
+                {new Date(u.createdAt).toLocaleDateString()}
+              </span>
+            ),
+          },
+          {
+            key: 'actions',
+            header: 'Actions',
+            align: 'right',
+            render: (u) =>
+              u.email !== user?.email && (
+                <div className="flex items-center justify-end gap-2">
+                  <Select
+                    value={u.role}
+                    onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
+                    options={ROLE_OPTIONS}
+                    className="rounded border border-zinc-300 bg-transparent px-2 py-1 text-xs text-zinc-700 outline-none dark:border-zinc-700 dark:bg-zinc-700 dark:text-zinc-300"
+                  />
+                  <Button
+                    onClick={() => handleDeleteUser(u.id)}
+                    variant="danger"
+                    size="sm"
+                    fullWidth={false}
+                    className="border border-red-300 bg-transparent dark:border-red-800"
+                  >
+                    Delete
+                  </Button>
+                </div>
+              ),
+          },
+        ]}
+        rows={optimisticUsers}
+        rowKey={(u) => u.id}
+        loading={loading}
+        emptyMessage="No users found"
+      />
 
       {lastKey && (
-        <button
-          onClick={() => fetchUsers(lastKey)}
-          className="w-full rounded-lg border border-zinc-300 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        <Button
+          onClick={() => loadMore(lastKey)}
+          variant="secondary"
+          className="border-zinc-300 dark:border-zinc-700"
         >
           Load more
-        </button>
+        </Button>
       )}
     </div>
   );

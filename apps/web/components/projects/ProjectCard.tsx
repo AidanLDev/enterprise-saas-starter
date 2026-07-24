@@ -2,70 +2,16 @@
 
 import { useState } from 'react';
 import { Project } from '@saas-starter/shared';
+import Button from '@/components/ui/Button';
+import { FolderIcon } from '@/components/icons/FolderIcon';
+import { PencilIcon } from '@/components/icons/PencilIcon';
+import { TrashIcon } from '@/components/icons/TrashIcon';
 
 interface IProjectCard {
   project: Project;
   isAdmin: boolean;
   onEdit?: (project: Project) => void;
   onDelete?: (id: string) => Promise<void>;
-}
-
-function FolderIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
-    </svg>
-  );
-}
-
-function PencilIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6l-1 14H6L5 6" />
-      <path d="M10 11v6M14 11v6" />
-      <path d="M9 6V4h6v2" />
-    </svg>
-  );
 }
 
 export default function ProjectCard({
@@ -115,41 +61,47 @@ export default function ProjectCard({
           <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
             {confirming ? (
               <>
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  fullWidth={false}
                   onClick={() => setConfirming(false)}
                   disabled={deleting}
-                  className="rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
+                  className="border-0 px-2 py-1"
                 >
                   Cancel
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  fullWidth={false}
                   onClick={handleDelete}
                   disabled={deleting}
-                  className="rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/40"
                 >
                   {deleting ? 'Deleting…' : 'Confirm'}
-                </button>
+                </Button>
               </>
             ) : (
               <>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  fullWidth={false}
                   onClick={() => onEdit?.(project)}
                   aria-label={`Edit ${project.name}`}
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:text-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
                 >
                   <PencilIcon />
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  fullWidth={false}
                   onClick={handleDelete}
                   aria-label={`Delete ${project.name}`}
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                  className="hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                 >
                   <TrashIcon />
-                </button>
+                </Button>
               </>
             )}
           </div>

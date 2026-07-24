@@ -51,13 +51,11 @@ export default function CreateProjectModal({ isOpen, onClose, onSubmit }: Create
         />
 
         <div className="flex gap-2 pt-1">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="flex-1 rounded-lg border border-zinc-200 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-          >
-            Cancel
-          </button>
+          <div className="flex-1">
+            <Button type="button" variant="secondary" onClick={handleClose}>
+              Cancel
+            </Button>
+          </div>
           <div className="flex-1">
             <Button type="submit" disabled={!projectName.trim()}>
               Create project

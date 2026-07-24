@@ -61,7 +61,7 @@ export class Auth extends Construct {
     const postConfirmationFn = new NodejsFunction(this, 'PostConfirmation', {
       entry: path.join(__dirname, '../triggers/post-confirmation.ts'),
       handler: 'handler',
-      runtime: lambda.Runtime.NODEJS_20_X,
+      runtime: lambda.Runtime.NODEJS_LATEST,
       memorySize: 256,
       timeout: cdk.Duration.seconds(10),
       environment: {

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import Button from '@/components/ui/Button';
+import { CloseIcon } from '@/components/icons/CloseIcon';
 
 interface ModalProps {
   isOpen: boolean;
@@ -109,21 +111,16 @@ export default function Modal({ isOpen, onClose, title, children, size = 'md' }:
           <h2 id={titleId} className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
             {title}
           </h2>
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            fullWidth={false}
             onClick={onClose}
             aria-label="Close"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
           >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path
-                d="M1 1l10 10M11 1L1 11"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
+            <CloseIcon />
+          </Button>
         </div>
 
         <div className="px-5 py-4">{children}</div>

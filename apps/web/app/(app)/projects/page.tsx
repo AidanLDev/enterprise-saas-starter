@@ -9,6 +9,8 @@ import ErrorText from '@/components/ui/Typography/ErrorText';
 import ProjectCard from '@/components/projects/ProjectCard';
 import EditProjectModal from '@/components/projects/EditProjectModal';
 import Button from '@/components/ui/Button';
+import { SearchIcon } from '@/components/icons/SearchIcon';
+import { CloseIcon } from '@/components/icons/CloseIcon';
 
 interface ProjectsResponse {
   data: Project[];
@@ -85,21 +87,7 @@ export default function Projects() {
 
       {/* Search / filter bar */}
       <div className="relative">
-        <svg
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500"
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
         <input
           type="search"
           aria-label="Filter projects by title"
@@ -109,21 +97,17 @@ export default function Projects() {
           className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-9 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-500 dark:focus:border-zinc-500 dark:focus:ring-zinc-800 sm:max-w-xs"
         />
         {search && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
+            fullWidth={false}
             aria-label="Clear filter"
             onClick={() => setSearch('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300"
+            className="absolute right-3 top-1/2 h-auto w-auto -translate-y-1/2 bg-transparent p-0.5 hover:bg-transparent dark:hover:bg-transparent"
           >
-            <svg width="13" height="13" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path
-                d="M1 1l10 10M11 1L1 11"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
+            <CloseIcon width="13" height="13" />
+          </Button>
         )}
       </div>
 
