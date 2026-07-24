@@ -1,10 +1,14 @@
 'use client';
 
 import { SubmitEvent, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Text from '@/components/ui/Typography/Text';
+import AuthLayout from '@/components/ui/AuthLayout';
+import AuthCard from '@/components/ui/AuthCard';
+import Link from '@/components/ui/Link';
 
 export default function SignUpPage() {
   const { signUp } = useAuth();
@@ -30,56 +34,42 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-6 rounded-xl bg-white p-8 shadow dark:bg-zinc-900"
-      >
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Create account</h1>
+    <AuthLayout>
+      <AuthCard onSubmit={handleSubmit}>
+        <Text variant="heading">Create account</Text>
 
-        {error && (
-          <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            {error}
-          </p>
-        )}
+        {error && <Text variant="error">{error}</Text>}
 
-        <label className="block space-y-1">
-          <span className="text-sm text-zinc-600 dark:text-zinc-400">Email</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
-          />
-        </label>
+        <Input
+          label="Email"
+          value={email}
+          required
+          onChange={(e) => setEmail(e.target.value)}
+          type="email"
+        />
 
-        <label className="block space-y-1">
-          <span className="text-sm text-zinc-600 dark:text-zinc-400">Password</span>
-          <input
-            type="password"
+        <div>
+          <Input
+            label="Password"
+            value={password}
             required
             minLength={8}
-            value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+            type="password"
           />
-          <span className="text-xs text-zinc-400">
+          <Text variant="body" className="mt-1 text-xs">
             Min 8 characters, uppercase, lowercase, digit
-          </span>
-        </label>
+          </Text>
+        </div>
 
         <Button type="submit" disabled={submitting}>
           {submitting ? 'Creating account…' : 'Sign up'}
         </Button>
 
-        <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Already have an account?{' '}
-          <Link href="/login" className="font-medium text-zinc-900 dark:text-zinc-50">
-            Sign in
-          </Link>
-        </p>
-      </form>
-    </div>
+        <Text variant="caption">
+          Already have an account? <Link href="/login">Sign in</Link>
+        </Text>
+      </AuthCard>
+    </AuthLayout>
   );
 }

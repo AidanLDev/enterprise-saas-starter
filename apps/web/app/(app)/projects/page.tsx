@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import ProjectsHeader from '@/components/projects/ProjectsHeader';
 import { useAuth } from '@/components/auth-provider';
 import { apiFetch } from '@/lib/api';
@@ -11,41 +11,33 @@ import EditProjectModal from '@/components/projects/EditProjectModal';
 import Button from '@/components/ui/Button';
 import { SearchIcon } from '@/components/icons/SearchIcon';
 import { CloseIcon } from '@/components/icons/CloseIcon';
-
-interface ProjectsResponse {
-  data: Project[];
-  lastKey?: string;
-}
+import { usePaginatedFetch } from '@/hooks/usePaginatedFetch';
 
 export default function Projects() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
-  const [error, setError] = useState('');
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [lastKey, setLastKey] = useState<string | undefined>();
+  const {
+    data: projects,
+    setData: setProjects,
+    lastKey,
+    error,
+    loadMore,
+    refetch,
+  } = usePaginatedFetch<Project>('/projects', {
+    enabled: !!user,
+    errorMessage: 'Failed to load projects',
+  });
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [search, setSearch] = useState('');
 
-  const fetchProjects = useCallback(async (cursor?: string) => {
-    try {
-      const params = cursor ? `?lastKey=${cursor}` : '';
-      const res = await apiFetch<ProjectsResponse>(`/projects${params}`);
-      if (cursor) {
-        setProjects((prev) => [...prev, ...res.data]);
-      } else {
-        setProjects(res.data);
-      }
-      setLastKey(res.lastKey);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load projects');
-    }
-  }, []);
-
-  const handleDelete = useCallback(async (id: string) => {
-    await apiFetch(`/projects/${id}`, { method: 'DELETE' });
-    setProjects((prev) => prev.filter((p) => p.id !== id));
-  }, []);
+  const handleDelete = useCallback(
+    async (id: string) => {
+      await apiFetch(`/projects/${id}`, { method: 'DELETE' });
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+    },
+    [setProjects]
+  );
 
   const handleUpdate = useCallback(
     async (id: string, data: { projectName: string; projectDescription: string }) => {
@@ -55,34 +47,16 @@ export default function Projects() {
       });
       setProjects((prev) => prev.map((p) => (p.id === id ? res.data : p)));
     },
-    []
+    [setProjects]
   );
 
   const filtered = search.trim()
     ? projects.filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     : projects;
 
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    apiFetch<ProjectsResponse>('/projects')
-      .then((res) => {
-        if (!cancelled) {
-          setProjects(res.data);
-          setLastKey(res.lastKey);
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load projects');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
   return (
     <div className="flex flex-col gap-6 p-6">
-      <ProjectsHeader onProjectCreated={() => fetchProjects()} />
+      <ProjectsHeader onProjectCreated={() => refetch()} />
       {error && <ErrorText errorMessage={error} />}
 
       {/* Search / filter bar */}
@@ -130,7 +104,7 @@ export default function Projects() {
       </div>
       {lastKey && !search && (
         <div className="flex justify-center">
-          <Button onClick={() => fetchProjects(lastKey)}>Load more</Button>
+          <Button onClick={() => loadMore()}>Load more</Button>
         </div>
       )}
       <EditProjectModal

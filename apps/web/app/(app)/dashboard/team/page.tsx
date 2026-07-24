@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useOptimistic, useState } from 'react';
+import { useEffect, useOptimistic, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import { apiFetch } from '@/lib/api';
@@ -9,27 +9,34 @@ import ErrorText from '@/components/ui/Typography/ErrorText';
 import Select from '@/components/ui/Select';
 import Button from '@/components/ui/Button';
 import Table from '@/components/ui/Table';
+import RoleBadge from '@/components/ui/RoleBadge';
+import { usePaginatedFetch } from '@/hooks/usePaginatedFetch';
 
 const ROLE_OPTIONS = [
   { value: 'user', label: 'User' },
   { value: 'admin', label: 'Admin' },
 ];
 
-interface UsersResponse {
-  data: User[];
-  lastKey?: string;
-}
-
 export default function TeamPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
+  const isAdmin = user?.role === 'admin';
+
+  const {
+    data: users,
+    setData: setUsers,
+    lastKey,
+    loading,
+    error,
+    setError,
+    loadMore,
+  } = usePaginatedFetch<User>('/admin/users', {
+    enabled: isAdmin,
+    errorMessage: 'Failed to load users',
+  });
   const [optimisticUsers, addOptimisticUser] = useOptimistic(users, (current, newUser: User) => {
     return [...current.filter((u) => u.id !== newUser.id), newUser];
   });
-  const [lastKey, setLastKey] = useState<string | undefined>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   // Invite state
   const [showInvite, setShowInvite] = useState(false);
@@ -38,38 +45,8 @@ export default function TeamPage() {
   const [inviting, setInviting] = useState(false);
   const [inviteMessage, setInviteMessage] = useState('');
 
-  const loadMore = useCallback(async (cursor: string) => {
-    try {
-      const res = await apiFetch<UsersResponse>(`/admin/users?lastKey=${cursor}`);
-      setUsers((prev) => [...prev, ...res.data]);
-      setLastKey(res.lastKey);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load users');
-    }
-  }, []);
-
   useEffect(() => {
-    if (!user) return;
-    if (user.role !== 'admin') {
-      router.replace('/dashboard');
-      return;
-    }
-    let cancelled = false;
-    apiFetch<UsersResponse>('/admin/users')
-      .then((res) => {
-        if (cancelled) return;
-        setUsers(res.data);
-        setLastKey(res.lastKey);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load users');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    if (user && user.role !== 'admin') router.replace('/dashboard');
   }, [user, router]);
 
   async function handleRoleChange(userId: string, newRole: UserRole) {
@@ -190,17 +167,7 @@ export default function TeamPage() {
           {
             key: 'role',
             header: 'Role',
-            render: (u) => (
-              <span
-                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                  u.role === 'admin'
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                    : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                }`}
-              >
-                {u.role}
-              </span>
-            ),
+            render: (u) => <RoleBadge role={u.role} />,
           },
           {
             key: 'joined',
@@ -245,7 +212,7 @@ export default function TeamPage() {
 
       {lastKey && (
         <Button
-          onClick={() => loadMore(lastKey)}
+          onClick={() => loadMore()}
           variant="secondary"
           className="border-zinc-300 dark:border-zinc-700"
         >

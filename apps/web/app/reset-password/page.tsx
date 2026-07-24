@@ -1,12 +1,16 @@
 'use client';
 
-import { SubmitEvent, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import { SubmitEvent, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import Button from '@/components/ui/Button';
-
-const RESEND_COOLDOWN = 30;
+import Input from '@/components/ui/Input';
+import Text from '@/components/ui/Typography/Text';
+import AuthLayout from '@/components/ui/AuthLayout';
+import AuthCard from '@/components/ui/AuthCard';
+import Link from '@/components/ui/Link';
+import ResendCodeControl from '@/components/ui/ResendCodeControl';
+import { useResendCountdown } from '@/hooks/useResendCountdown';
 
 function ResetPasswordForm() {
   const { confirmForgotPassword, forgotPassword, signIn } = useAuth();
@@ -19,45 +23,18 @@ function ResetPasswordForm() {
   const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [countdown, setCountdown] = useState(RESEND_COOLDOWN);
-  const [resending, setResending] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startCountdown = useCallback(() => {
-    setCountdown(RESEND_COOLDOWN);
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          timerRef.current = null;
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, []);
-
-  useEffect(() => {
-    startCountdown();
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [startCountdown]);
-
-  async function handleResend() {
-    if (!email) return;
-    setResending(true);
-    setError('');
-    try {
-      await forgotPassword(email);
-      startCountdown();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to resend code');
-    } finally {
-      setResending(false);
-    }
-  }
+  const { countdown, resending, resend } = useResendCountdown({
+    onResend: async () => {
+      if (!email) return;
+      setError('');
+      try {
+        await forgotPassword(email);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to resend code');
+      }
+    },
+  });
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
@@ -75,93 +52,59 @@ function ResetPasswordForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="w-full max-w-sm space-y-6 rounded-xl bg-white p-8 shadow dark:bg-zinc-900"
-    >
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Set new password</h1>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+    <AuthCard onSubmit={handleSubmit}>
+      <Text variant="heading">Set new password</Text>
+      <Text variant="body">
         Enter the verification code sent to your email and choose a new password.
-      </p>
+      </Text>
 
-      {error && (
-        <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-          {error}
-        </p>
-      )}
+      {error && <Text variant="error">{error}</Text>}
 
-      <label className="block space-y-1">
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">Email</span>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
-        />
-      </label>
+      <Input
+        label="Email"
+        value={email}
+        required
+        onChange={(e) => setEmail(e.target.value)}
+        type="email"
+      />
 
-      <label className="block space-y-1">
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">Verification code</span>
-        <input
-          type="text"
-          required
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm tracking-widest outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
-        />
-      </label>
+      <Input
+        label="Verification code"
+        value={code}
+        required
+        onChange={(e) => setCode(e.target.value)}
+        type="text"
+        inputMode="numeric"
+        autoComplete="one-time-code"
+        className="tracking-widest"
+      />
 
-      <label className="block space-y-1">
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">New password</span>
-        <input
-          type="password"
-          required
-          minLength={8}
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
-        />
-      </label>
+      <Input
+        label="New password"
+        value={newPassword}
+        required
+        minLength={8}
+        onChange={(e) => setNewPassword(e.target.value)}
+        type="password"
+      />
 
       <Button type="submit" disabled={submitting}>
         {submitting ? 'Resetting…' : 'Reset password'}
       </Button>
 
-      <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
-        {countdown > 0 ? (
-          <>Resend code in {countdown}s</>
-        ) : (
-          <Button
-            type="button"
-            variant="link"
-            fullWidth={false}
-            disabled={resending}
-            onClick={handleResend}
-            className="cursor-pointer"
-          >
-            {resending ? 'Resending…' : 'Resend code'}
-          </Button>
-        )}
-      </p>
+      <ResendCodeControl countdown={countdown} resending={resending} onResend={resend} />
 
-      <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
-        <Link href="/login" className="font-medium text-zinc-900 dark:text-zinc-50">
-          Back to sign in
-        </Link>
-      </p>
-    </form>
+      <Text variant="caption">
+        <Link href="/login">Back to sign in</Link>
+      </Text>
+    </AuthCard>
   );
 }
 
 export default function ResetPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <Suspense fallback={<p className="text-zinc-500">Loading…</p>}>
-        <ResetPasswordForm />
-      </Suspense>
-    </div>
+    <AuthLayout>
+      <ResetPasswordForm />
+    </AuthLayout>
   );
 }

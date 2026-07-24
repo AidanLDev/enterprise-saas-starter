@@ -7,6 +7,11 @@ interface IInputProps {
   type?: InputHTMLAttributes<HTMLInputElement>['type'];
   required?: boolean;
   disabled?: boolean;
+  minLength?: number;
+  inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode'];
+  autoComplete?: string;
+  placeholder?: string;
+  className?: string;
 }
 
 export default function Input(props: Readonly<IInputProps>) {
@@ -18,9 +23,14 @@ export default function Input(props: Readonly<IInputProps>) {
           id={`${props.label}-input`}
           type={props.type}
           required={props.required}
+          disabled={props.disabled}
+          minLength={props.minLength}
+          inputMode={props.inputMode}
+          autoComplete={props.autoComplete}
+          placeholder={props.placeholder}
           value={props.value}
           onChange={props.onChange}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
+          className={`w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 ${props.className ?? ''}`}
         />
       </label>
     </>

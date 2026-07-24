@@ -1,10 +1,14 @@
 'use client';
 
-import { SubmitEvent, Suspense, useState } from 'react';
-import Link from 'next/link';
+import { SubmitEvent, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/auth-provider';
 import Button from '@/components/ui/Button';
+import Input from '@/components/ui/Input';
+import Text from '@/components/ui/Typography/Text';
+import AuthLayout from '@/components/ui/AuthLayout';
+import AuthCard from '@/components/ui/AuthCard';
+import Link from '@/components/ui/Link';
 
 function ForgotPasswordForm() {
   const { forgotPassword } = useAuth();
@@ -31,51 +35,37 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="w-full max-w-sm space-y-6 rounded-xl bg-white p-8 shadow dark:bg-zinc-900"
-    >
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Reset password</h1>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+    <AuthCard onSubmit={handleSubmit}>
+      <Text variant="heading">Reset password</Text>
+      <Text variant="body">
         Enter your email and we&apos;ll send you a verification code to reset your password.
-      </p>
+      </Text>
 
-      {error && (
-        <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-          {error}
-        </p>
-      )}
+      {error && <Text variant="error">{error}</Text>}
 
-      <label className="block space-y-1">
-        <span className="text-sm text-zinc-600 dark:text-zinc-400">Email</span>
-        <input
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50"
-        />
-      </label>
+      <Input
+        label="Email"
+        value={email}
+        required
+        onChange={(e) => setEmail(e.target.value)}
+        type="email"
+      />
 
       <Button type="submit" disabled={submitting}>
         {submitting ? 'Sending code…' : 'Send reset code'}
       </Button>
 
-      <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">
-        <Link href="/login" className="font-medium text-zinc-900 dark:text-zinc-50">
-          Back to sign in
-        </Link>
-      </p>
-    </form>
+      <Text variant="caption">
+        <Link href="/login">Back to sign in</Link>
+      </Text>
+    </AuthCard>
   );
 }
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <Suspense fallback={<p className="text-zinc-500">Loading…</p>}>
-        <ForgotPasswordForm />
-      </Suspense>
-    </div>
+    <AuthLayout>
+      <ForgotPasswordForm />
+    </AuthLayout>
   );
 }

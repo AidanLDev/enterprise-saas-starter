@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/components/auth-provider';
+import RoleBadge from '@/components/ui/RoleBadge';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -16,10 +17,7 @@ export default function DashboardPage() {
       </p>
       {user.role && (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Role:{' '}
-          <span className="inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-            {user.role}
-          </span>
+          Role: <RoleBadge role={user.role} />
         </p>
       )}
     </div>

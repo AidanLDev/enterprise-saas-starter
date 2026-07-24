@@ -8,6 +8,8 @@ import { isNewPasswordRequired } from '../../lib/auth';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Text from '@/components/ui/Typography/Text';
+import AuthLayout from '@/components/ui/AuthLayout';
+import AuthCard from '@/components/ui/AuthCard';
 
 export default function LoginPage() {
   const { signIn, completeNewPassword } = useAuth();
@@ -62,11 +64,8 @@ export default function LoginPage() {
 
   if (needsNewPassword) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-        <form
-          onSubmit={handleSetNewPassword}
-          className="w-full max-w-sm space-y-6 rounded-xl bg-white p-8 shadow dark:bg-zinc-900"
-        >
+      <AuthLayout>
+        <AuthCard onSubmit={handleSetNewPassword}>
           <Text variant="heading">Set new password</Text>
           <Text variant="body">
             You were invited to join. Please set a new password to continue.
@@ -93,17 +92,14 @@ export default function LoginPage() {
           <Button type="submit" disabled={submitting}>
             {submitting ? 'Setting password…' : 'Set password'}
           </Button>
-        </form>
-      </div>
+        </AuthCard>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-6 rounded-xl bg-white p-8 shadow dark:bg-zinc-900"
-      >
+    <AuthLayout>
+      <AuthCard onSubmit={handleSubmit}>
         <Text variant="heading">Sign in</Text>
 
         {error && <Text variant="error">{error}</Text>}
@@ -138,7 +134,7 @@ export default function LoginPage() {
         <Text variant="caption">
           Don&apos;t have an account? <Link href="/signup">Sign up</Link>
         </Text>
-      </form>
-    </div>
+      </AuthCard>
+    </AuthLayout>
   );
 }
