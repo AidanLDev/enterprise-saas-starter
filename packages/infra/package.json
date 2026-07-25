@@ -1,7 +1,7 @@
 {
   "name": "@saas-starter/infra",
-  "version": "0.0.1",
-  "private": true,
+  "version": "1.0.0",
+  "private": false,
   "scripts": {
     "build": "tsc",
     "deploy": "cdk deploy --outputs-file cdk-outputs.json",
