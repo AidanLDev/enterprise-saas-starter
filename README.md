@@ -154,6 +154,12 @@ This repo is meant to be a starting point, not a finished product. Common next s
 
 If you make a structural change you think other users of this starter would benefit from, consider opening a PR — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Community
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — how to propose changes, coding standards, PR expectations
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — expected standard of behavior in this project's spaces
+- [SECURITY.md](SECURITY.md) — how to report a vulnerability privately
+
 ## License
 
 [MIT](LICENSE)

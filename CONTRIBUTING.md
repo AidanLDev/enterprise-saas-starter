@@ -52,4 +52,12 @@ E2E tests (`pnpm --filter web test:e2e`) require Playwright browsers installed (
 
 ## Reporting Bugs / Requesting Features
 
-Open a GitHub issue. For bugs, include repro steps and which part of the stack is affected (frontend, API, infra). For feature requests, a short rationale for why it belongs in a _starter_ rather than something you'd add after forking helps a lot.
+Open a GitHub issue using the bug report or feature request template. For bugs, include repro steps and which part of the stack is affected (frontend, API, infra). For feature requests, a short rationale for why it belongs in a _starter_ rather than something you'd add after forking helps a lot.
+
+## Reporting Security Issues
+
+Please don't open a public issue for security vulnerabilities — see [SECURITY.md](SECURITY.md) for how to report privately.
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md).
